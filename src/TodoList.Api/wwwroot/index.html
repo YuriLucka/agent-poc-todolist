@@ -12,18 +12,28 @@
     li { display: flex; align-items: center; gap: .5rem; padding: .5rem 0; border-bottom: 1px solid #ddd; }
     li.done .title { text-decoration: line-through; color: #888; }
     .title { flex: 1; }
+    .priority { font-size: .8rem; padding: .1rem .4rem; border-radius: 4px; }
+    .priority.baixa { background: #e3f2e1; color: #2e6b27; }
+    .priority.media { background: #fff3cd; color: #7a5b00; }
+    .priority.alta { background: #f8d7da; color: #8a1c24; }
   </style>
 </head>
 <body>
   <h1>TodoList</h1>
   <form id="form">
     <input id="title" type="text" placeholder="Nova tarefa" required>
+    <select id="priority" aria-label="Prioridade">
+      <option value="baixa">Baixa</option>
+      <option value="media" selected>Média</option>
+      <option value="alta">Alta</option>
+    </select>
     <button type="submit">Adicionar</button>
   </form>
   <ul id="list"></ul>
 
   <script>
     const list = document.getElementById('list');
+    const priorityLabels = { baixa: 'Baixa', media: 'Média', alta: 'Alta' };
 
     async function load() {
       const todos = await (await fetch('/api/todos')).json();
@@ -42,11 +52,15 @@
         title.className = 'title';
         title.textContent = t.title;
 
+        const priority = document.createElement('span');
+        priority.className = `priority ${t.priority}`;
+        priority.textContent = priorityLabels[t.priority] ?? t.priority;
+
         const del = document.createElement('button');
         del.textContent = 'Remover';
         del.onclick = async () => { await fetch(`/api/todos/${t.id}`, { method: 'DELETE' }); load(); };
 
-        li.append(cb, title, del);
+        li.append(cb, title, priority, del);
         list.append(li);
       }
     }
@@ -57,7 +71,7 @@
       await fetch('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: input.value })
+        body: JSON.stringify({ title: input.value, priority: document.getElementById('priority').value })
       });
       input.value = '';
       load();

@@ -5,6 +5,7 @@ var app = builder.Build();
 
 var items = new ConcurrentDictionary<int, TodoItem>();
 var nextId = 0;
+string[] priorities = ["baixa", "media", "alta"];
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -16,8 +17,12 @@ app.MapPost("/api/todos", (CreateTodo input) =>
     if (string.IsNullOrWhiteSpace(input.Title))
         return Results.BadRequest(new { error = "Title is required." });
 
+    var priority = string.IsNullOrWhiteSpace(input.Priority) ? "media" : input.Priority.Trim().ToLowerInvariant();
+    if (!priorities.Contains(priority))
+        return Results.BadRequest(new { error = "Priority must be baixa, media or alta." });
+
     var id = Interlocked.Increment(ref nextId);
-    var item = new TodoItem(id, input.Title.Trim(), false);
+    var item = new TodoItem(id, input.Title.Trim(), false, priority);
     items[id] = item;
     return Results.Created($"/api/todos/{id}", item);
 });
@@ -37,7 +42,7 @@ app.MapDelete("/api/todos/{id:int}", (int id) =>
 
 app.Run();
 
-public record TodoItem(int Id, string Title, bool Done);
-public record CreateTodo(string Title);
+public record TodoItem(int Id, string Title, bool Done, string Priority);
+public record CreateTodo(string Title, string? Priority = null);
 
 public partial class Program { }
