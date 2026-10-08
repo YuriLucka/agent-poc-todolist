@@ -90,6 +90,56 @@ public class TodoApiTests(WebApplicationFactory<Program> factory) : IClassFixtur
     }
 
     [Fact]
+    public async Task Create_WithDueDate_StoresDueDate()
+    {
+        var response = await _client.PostAsJsonAsync("/api/todos", new { title = "Entregar relatório", dueDate = "2030-01-15" });
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var item = await response.Content.ReadFromJsonAsync<TodoItem>();
+        Assert.Equal(new DateOnly(2030, 1, 15), item!.DueDate);
+    }
+
+    [Fact]
+    public async Task Create_WithoutDueDate_HasNullDueDate()
+    {
+        var item = await (await _client.PostAsJsonAsync("/api/todos", new { title = "Sem prazo" }))
+            .Content.ReadFromJsonAsync<TodoItem>();
+
+        Assert.Null(item!.DueDate);
+    }
+
+    [Fact]
+    public async Task Create_WithInvalidDueDate_ReturnsBadRequest()
+    {
+        var response = await _client.PostAsJsonAsync("/api/todos", new { title = "Prazo ruim", dueDate = "abc" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task List_IncludesDueDate()
+    {
+        var created = await (await _client.PostAsJsonAsync("/api/todos", new { title = "Pagar IPTU", dueDate = "2030-02-20" }))
+            .Content.ReadFromJsonAsync<TodoItem>();
+
+        var todos = await _client.GetFromJsonAsync<List<TodoItem>>("/api/todos");
+
+        Assert.Equal(new DateOnly(2030, 2, 20), todos!.Single(t => t.Id == created!.Id).DueDate);
+    }
+
+    [Fact]
+    public async Task Toggle_KeepsDueDate()
+    {
+        var created = await (await _client.PostAsJsonAsync("/api/todos", new { title = "Renovar CNH", dueDate = "2030-03-10" }))
+            .Content.ReadFromJsonAsync<TodoItem>();
+
+        var toggled = await (await _client.PutAsync($"/api/todos/{created!.Id}/toggle", null))
+            .Content.ReadFromJsonAsync<TodoItem>();
+
+        Assert.Equal(new DateOnly(2030, 3, 10), toggled!.DueDate);
+    }
+
+    [Fact]
     public async Task Toggle_FlipsDone()
     {
         var created = await (await _client.PostAsJsonAsync("/api/todos", new { title = "Estudar" }))

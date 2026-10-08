@@ -22,7 +22,7 @@ app.MapPost("/api/todos", (CreateTodo input) =>
         return Results.BadRequest(new { error = "Priority must be baixa, media or alta." });
 
     var id = Interlocked.Increment(ref nextId);
-    var item = new TodoItem(id, input.Title.Trim(), false, priority);
+    var item = new TodoItem(id, input.Title.Trim(), false, priority, input.DueDate);
     items[id] = item;
     return Results.Created($"/api/todos/{id}", item);
 });
@@ -42,7 +42,7 @@ app.MapDelete("/api/todos/{id:int}", (int id) =>
 
 app.Run();
 
-public record TodoItem(int Id, string Title, bool Done, string Priority);
-public record CreateTodo(string Title, string? Priority = null);
+public record TodoItem(int Id, string Title, bool Done, string Priority, DateOnly? DueDate = null);
+public record CreateTodo(string Title, string? Priority = null, DateOnly? DueDate = null);
 
 public partial class Program { }
