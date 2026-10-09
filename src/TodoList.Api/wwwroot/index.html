@@ -23,9 +23,10 @@
   <h1>TodoList</h1>
   <form id="form">
     <input id="title" type="text" placeholder="Nova tarefa" required>
-    <select id="priority" aria-label="Prioridade">
+    <select id="priority" aria-label="Prioridade" required>
+      <option value="" selected disabled>Selecione a prioridade</option>
       <option value="baixa">Baixa</option>
-      <option value="media" selected>Média</option>
+      <option value="media">Média</option>
       <option value="alta">Alta</option>
     </select>
     <input id="dueDate" type="date" aria-label="Data de vencimento">
@@ -75,17 +76,19 @@
       e.preventDefault();
       const input = document.getElementById('title');
       const dueDate = document.getElementById('dueDate');
+      const priority = document.getElementById('priority');
       await fetch('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: input.value,
-          priority: document.getElementById('priority').value,
+          priority: priority.value,
           dueDate: dueDate.value || null
         })
       });
       input.value = '';
       dueDate.value = '';
+      priority.value = '';
       load();
     };
 
