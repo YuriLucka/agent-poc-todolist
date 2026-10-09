@@ -1,0 +1,61 @@
+name: Publish to GitHub Pages
+
+# Every push to main (that is, every merged PR) tests the app and publishes it.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test
+        run: dotnet test --nologo
+
+      - name: Publish
+        run: dotnet publish src/TodoList.Web -c Release -o release --nologo
+
+      # The site lives at https://<user>.github.io/<repository>/, so the base path must match.
+      - name: Point the base href at the repository path
+        run: sed -i "s|<base href=\"/\" />|<base href=\"/${{ github.event.repository.name }}/\" />|" release/wwwroot/index.html
+
+      - name: Prepare for Pages
+        run: |
+          # Pages does not use the pre-compressed copies, and the .gz/.br of index.html would be stale after the edit above.
+          find release/wwwroot -name '*.br' -delete -o -name '*.gz' -delete
+          # Unknown paths fall back to the app instead of a GitHub 404 page.
+          cp release/wwwroot/index.html release/wwwroot/404.html
+          # Do not run Jekyll: it would drop the _framework folder.
+          touch release/wwwroot/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: release/wwwroot
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
