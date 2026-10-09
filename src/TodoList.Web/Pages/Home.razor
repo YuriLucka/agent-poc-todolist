@@ -1,0 +1,71 @@
+@page "/"
+@using System.Globalization
+@using TodoList.Web.Models
+@using TodoList.Web.Services
+@inject TodoService Todos
+
+<PageTitle>TodoList</PageTitle>
+
+<h1>TodoList</h1>
+
+<form id="form" @onsubmit="AddAsync" @onsubmit:preventDefault>
+    <input id="title" type="text" placeholder="Nova tarefa" aria-label="Título da tarefa"
+           @bind="title" @bind:event="oninput" maxlength="@TodoService.MaxTitleLength" required />
+    <select id="priority" aria-label="Prioridade" @bind="priorityValue" required>
+        <option value="" disabled>Selecione a prioridade</option>
+        @foreach (var p in Enum.GetValues<Priority>())
+        {
+            <option value="@p">@p.Label()</option>
+        }
+    </select>
+    <input id="dueDate" type="date" aria-label="Data de vencimento" @bind="dueDate" />
+    <button type="submit">Adicionar</button>
+</form>
+
+@if (error is not null)
+{
+    <p class="message error" role="alert">@error</p>
+}
+@if (Todos.StorageError is not null)
+{
+    <p class="message warning" role="status">@Todos.StorageError</p>
+}
+
+<ul id="list">
+    @foreach (var t in Todos.Items)
+    {
+        <li class="@(t.Done ? "done" : null)" data-id="@t.Id">
+            <input type="checkbox" checked="@t.Done" aria-label="Concluir: @t.Title"
+                   @onchange="() => Todos.ToggleAsync(t.Id)" />
+            <span class="title">@t.Title</span>
+            @if (t.DueDate is { } due)
+            {
+                <span class="due">@due.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</span>
+            }
+            <span class="priority @t.Priority.ToString().ToLowerInvariant()">@t.Priority.Label()</span>
+            <button type="button" @onclick="() => Todos.RemoveAsync(t.Id)">Remover</button>
+        </li>
+    }
+</ul>
+
+@code {
+    private string title = "";
+    private string priorityValue = "";
+    private DateOnly? dueDate;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => Todos.InitializeAsync();
+
+    private async Task AddAsync()
+    {
+        Priority? priority = Enum.TryParse<Priority>(priorityValue, out var parsed) ? parsed : null;
+
+        var result = await Todos.AddAsync(title, priority, dueDate);
+        error = result.Error;
+        if (!result.Ok) return;
+
+        title = "";
+        priorityValue = "";
+        dueDate = null;
+    }
+}

@@ -1,6 +1,6 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/TodoList.Api/TodoList.Api.csproj" />
+    <Project Path="src/TodoList.Web/TodoList.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/TodoList.Tests/TodoList.Tests.csproj" />
