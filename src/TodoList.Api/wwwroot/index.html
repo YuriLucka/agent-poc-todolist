@@ -12,6 +12,7 @@
     li { display: flex; align-items: center; gap: .5rem; padding: .5rem 0; border-bottom: 1px solid #ddd; }
     li.done .title { text-decoration: line-through; color: #888; }
     .title { flex: 1; }
+    .due { font-size: .8rem; color: #666; }
     .priority { font-size: .8rem; padding: .1rem .4rem; border-radius: 4px; }
     .priority.baixa { background: #e3f2e1; color: #2e6b27; }
     .priority.media { background: #fff3cd; color: #7a5b00; }
@@ -27,6 +28,7 @@
       <option value="media" selected>Média</option>
       <option value="alta">Alta</option>
     </select>
+    <input id="dueDate" type="date" aria-label="Data de vencimento">
     <button type="submit">Adicionar</button>
   </form>
   <ul id="list"></ul>
@@ -52,6 +54,10 @@
         title.className = 'title';
         title.textContent = t.title;
 
+        const due = document.createElement('span');
+        due.className = 'due';
+        if (t.dueDate) due.textContent = t.dueDate.split('-').reverse().join('/');
+
         const priority = document.createElement('span');
         priority.className = `priority ${t.priority}`;
         priority.textContent = priorityLabels[t.priority] ?? t.priority;
@@ -60,7 +66,7 @@
         del.textContent = 'Remover';
         del.onclick = async () => { await fetch(`/api/todos/${t.id}`, { method: 'DELETE' }); load(); };
 
-        li.append(cb, title, priority, del);
+        li.append(cb, title, ...(t.dueDate ? [due] : []), priority, del);
         list.append(li);
       }
     }
@@ -68,12 +74,18 @@
     document.getElementById('form').onsubmit = async (e) => {
       e.preventDefault();
       const input = document.getElementById('title');
+      const dueDate = document.getElementById('dueDate');
       await fetch('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: input.value, priority: document.getElementById('priority').value })
+        body: JSON.stringify({
+          title: input.value,
+          priority: document.getElementById('priority').value,
+          dueDate: dueDate.value || null
+        })
       });
       input.value = '';
+      dueDate.value = '';
       load();
     };
 
