@@ -1,0 +1,29 @@
+<svg class="icon" viewBox="0 0 24 24" width="@Size" height="@Size" fill="none" stroke="currentColor"
+     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    @switch (Name)
+    {
+        case "plus":
+            <path d="M12 5v14M5 12h14" />
+            break;
+        case "trash":
+            <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6" />
+            break;
+        case "calendar":
+            <path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" />
+            break;
+        case "check":
+            <path d="M5 12.5l4.5 4.5L19 7.5" />
+            break;
+        case "flag":
+            <path d="M5 21V4M5 4h12l-2 4 2 4H5" />
+            break;
+        case "note":
+            <path d="M5 4h14v16H5zM8 9h8M8 13h8M8 17h5" />
+            break;
+    }
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = "";
+    [Parameter] public int Size { get; set; } = 18;
+}
