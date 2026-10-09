@@ -114,6 +114,59 @@ public class TodoServiceTests
         Assert.Empty(_service.Items);
     }
 
+    [Fact]
+    public async Task Add_WithDescription_TrimsAndStoresIt()
+    {
+        await _service.InitializeAsync();
+
+        await _service.AddAsync("A", Priority.Baixa, null, "  detalhes  ");
+
+        Assert.Equal("detalhes", Assert.Single(_store.Saved).Description);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public async Task Add_WithBlankDescription_StoresNull(string? description)
+    {
+        await _service.InitializeAsync();
+
+        await _service.AddAsync("A", Priority.Baixa, null, description);
+
+        Assert.Null(Assert.Single(_store.Saved).Description);
+    }
+
+    [Fact]
+    public async Task Add_WithTooLongDescription_IsRejected()
+    {
+        await _service.InitializeAsync();
+
+        var result = await _service.AddAsync("A", Priority.Baixa, null, new string('x', TodoService.MaxDescriptionLength + 1));
+
+        Assert.False(result.Ok);
+        Assert.Empty(_store.Saved);
+    }
+
+    [Fact]
+    public async Task Counters_SeparatePendingFromDone()
+    {
+        await _service.InitializeAsync();
+        await _service.AddAsync("A", Priority.Baixa, null);
+        await _service.AddAsync("B", Priority.Baixa, null);
+        await _service.ToggleAsync(1);
+
+        Assert.Equal(1, _service.PendingCount);
+        Assert.Equal(1, _service.DoneCount);
+    }
+
+    [Fact]
+    public void Deserialize_OfOldDataWithoutDescription_Works()
+    {
+        var items = TodoSerializer.Deserialize("[{\"id\":1,\"title\":\"A\",\"done\":false,\"priority\":\"Alta\"}]");
+
+        Assert.Null(Assert.Single(items).Description);
+    }
+
     // ---- toggle and remove --------------------------------------------------------
 
     [Fact]

@@ -6,20 +6,39 @@
 
 <PageTitle>Lista de Tarefas</PageTitle>
 
-<h1>Lista de Tarefas</h1>
+<header class="app-header">
+    <span class="logo"><Icon Name="check" Size="26" /></span>
+    <div>
+        <h1>Lista de Tarefas</h1>
+        <p class="counter" id="counter">@Todos.PendingCount pendente(s) · @Todos.DoneCount concluída(s)</p>
+    </div>
+</header>
 
-<form id="form" @onsubmit="AddAsync" @onsubmit:preventDefault>
+<form id="form" class="card" @onsubmit="AddAsync" @onsubmit:preventDefault>
     <input id="title" type="text" placeholder="Nova tarefa" aria-label="Título da tarefa"
            @bind="title" @bind:event="oninput" maxlength="@TodoService.MaxTitleLength" required />
-    <select id="priority" aria-label="Prioridade" @bind="priorityValue" required>
-        <option value="" disabled>Selecione a prioridade</option>
-        @foreach (var p in Enum.GetValues<Priority>())
-        {
-            <option value="@p">@p.Label()</option>
-        }
-    </select>
-    <input id="dueDate" type="date" aria-label="Data de vencimento" @bind="dueDate" />
-    <button type="submit">Adicionar</button>
+    <div class="field">
+        <Icon Name="note" />
+        <input id="description" type="text" placeholder="Descrição (opcional)" aria-label="Descrição"
+               @bind="description" @bind:event="oninput" maxlength="@TodoService.MaxDescriptionLength" />
+    </div>
+    <div class="row">
+        <div class="field">
+            <Icon Name="flag" />
+            <select id="priority" aria-label="Prioridade" @bind="priorityValue" required>
+                <option value="" disabled>Selecione a prioridade</option>
+                @foreach (var p in Enum.GetValues<Priority>())
+                {
+                    <option value="@p">@p.Label()</option>
+                }
+            </select>
+        </div>
+        <div class="field">
+            <Icon Name="calendar" />
+            <input id="dueDate" type="date" aria-label="Data de vencimento" @bind="dueDate" />
+        </div>
+        <button type="submit"><Icon Name="plus" /> Adicionar</button>
+    </div>
 </form>
 
 @if (error is not null)
@@ -31,25 +50,43 @@
     <p class="message warning" role="status">@Todos.StorageError</p>
 }
 
+@if (Todos.Items.Count == 0)
+{
+    <div class="empty card">
+        <Icon Name="check" Size="36" />
+        <p>Nenhuma tarefa por aqui. Adicione a primeira!</p>
+    </div>
+}
+
 <ul id="list">
     @foreach (var t in Todos.Items)
     {
-        <li class="@(t.Done ? "done" : null)" data-id="@t.Id">
+        <li class="card @(t.Done ? "done" : null)" data-id="@t.Id">
             <input type="checkbox" checked="@t.Done" aria-label="Concluir: @t.Title"
                    @onchange="() => Todos.ToggleAsync(t.Id)" />
-            <span class="title">@t.Title</span>
-            @if (t.DueDate is { } due)
-            {
-                <span class="due">@due.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</span>
-            }
-            <span class="priority @t.Priority.ToString().ToLowerInvariant()">@t.Priority.Label()</span>
-            <button type="button" @onclick="() => Todos.RemoveAsync(t.Id)">Remover</button>
+            <div class="body">
+                <span class="title">@t.Title</span>
+                @if (t.Description is not null)
+                {
+                    <span class="description">@t.Description</span>
+                }
+                <div class="meta">
+                    <span class="priority @t.Priority.ToString().ToLowerInvariant()"><Icon Name="flag" Size="12" /> @t.Priority.Label()</span>
+                    @if (t.DueDate is { } due)
+                    {
+                        <span class="due"><Icon Name="calendar" Size="12" /> @due.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)</span>
+                    }
+                </div>
+            </div>
+            <button type="button" class="remove" aria-label="Remover: @t.Title" title="Remover"
+                    @onclick="() => Todos.RemoveAsync(t.Id)"><Icon Name="trash" /></button>
         </li>
     }
 </ul>
 
 @code {
     private string title = "";
+    private string description = "";
     private string priorityValue = "";
     private DateOnly? dueDate;
     private string? error;
@@ -60,11 +97,12 @@
     {
         Priority? priority = Enum.TryParse<Priority>(priorityValue, out var parsed) ? parsed : null;
 
-        var result = await Todos.AddAsync(title, priority, dueDate);
+        var result = await Todos.AddAsync(title, priority, dueDate, description);
         error = result.Error;
         if (!result.Ok) return;
 
         title = "";
+        description = "";
         priorityValue = "";
         dueDate = null;
     }
